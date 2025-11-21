@@ -1,7 +1,9 @@
 import streamlit as st
 import base64
 from pathlib import Path
-from app import app
+#from app import app
+from app2 import app
+
 # -----------------------------------------
 # Encode Image to Base64
 # -----------------------------------------
