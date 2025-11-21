@@ -16,8 +16,7 @@ langchain-community==0.3.27
 langchain-openai==0.3.31
 openai==1.101.0
 
-# --- Vector store ---
-chromadb==1.0.20
+
 
 # --- Extras ---
 pydantic==2.8.2
@@ -27,4 +26,5 @@ httpx==0.27.0
 psycopg2
 faiss-cpu
 openpyxl
-psycopg2
+
+
