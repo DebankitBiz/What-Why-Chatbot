@@ -18,6 +18,8 @@ def app():
     from langchain_community.utilities import SQLDatabase
     from langchain_community.tools.sql_database.tool import QuerySQLDataBaseTool
     import random
+    import warnings
+    warnings.filterwarnings("ignore")
 
     # ---------------------------------------
     # Setup
