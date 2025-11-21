@@ -1,0 +1,24 @@
+{
+  "common_questions": [
+    "What are the total sales by month?",
+    "Which products generate the highest revenue?",
+    "Who are the top-performing sales representatives?",
+    "How do sales compare across different channels?",
+    "What is the average price of each product class?",
+    "Which customers purchased the highest quantity of products?",
+    "What is the total sales contribution by each sales team?",
+    "How do sales vary across different years?",
+    "Which sub-channels drive the most sales?",
+    "What is the distribution of sales by manager?",
+    "What is the average quantity sold per transaction?",
+    "Which products have the highest sales volume?",
+    "What are the sales trends by month and year?",
+    "Which customer segments (by channel or sub-channel) bring the highest revenue?",
+    "How does the performance of each sales rep compare within a team?",
+    "Which product classes are most profitable?",
+    "Are there any seasonal patterns in sales?",
+    "What is the repeat purchase behavior of customers (frequency of sales)?",
+    "What is the correlation between price and quantity sold?",
+    "Which regions or channels show declining or increasing sales trends?"
+  ]
+}
