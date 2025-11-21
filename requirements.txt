@@ -16,15 +16,10 @@ langchain-community==0.3.27
 langchain-openai==0.3.31
 openai==1.101.0
 
-
-
 # --- Extras ---
 pydantic==2.8.2
 typing_extensions==4.12.2
 tiktoken==0.11.0
 httpx==0.27.0
-psycopg2
 faiss-cpu
 openpyxl
-
-
