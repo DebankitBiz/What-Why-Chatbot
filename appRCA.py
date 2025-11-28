@@ -5,6 +5,7 @@ def app():
     import sqlite3
     import random
     import warnings
+    import time
 
     import pandas as pd
     import streamlit as st
@@ -17,8 +18,7 @@ def app():
     os.environ["LANGCHAIN_TRACING_V2"] = os.getenv("LANGCHAIN_TRACING_V2", "true")
     os.environ["LANGCHAIN_API_KEY"] = os.getenv("LANGCHAIN_API_KEY", "")
     os.environ["LANGCHAIN_PROJECT"] = os.getenv("LANGCHAIN_PROJECT", "StructuredDataAssistant")
-        
-    
+
     import plotly.express as px
     import plotly.graph_objects as go
     import plotly.io as pio
@@ -234,7 +234,7 @@ def app():
         table_name = "excel_data"
 
         #model = st.selectbox("LLM Model", ["gpt-4o-mini", "gpt-4o"], index=0)
-        model="gpt-4o-mini"
+        model="gpt-5"
         #temperature = st.slider("Temperature", 0.0, 1.0, 0.0)
         temperature=0.0
 
@@ -297,6 +297,7 @@ def app():
     # If there is a new message to process (typed or clicked)
     # ---------------------------------------
     if pending_msg is not None:
+        start_all = time.time()
         user_msg = pending_msg
 
         # ✅ Only append user to history, don't render directly
@@ -311,42 +312,149 @@ def app():
             st.rerun()
 
         # ---------------------------------------
-        # Load Excel → SQLite
+        # Cache: Load Excel → SQLite ONCE per uploaded file
         # ---------------------------------------
-        try:
-            df = pd.read_excel(excel_file, sheet_name=sheet_name if sheet_name else 0)
-        except Exception as e:
-            st.session_state.chat_history.append(
-                {"role": "assistant", "content": f"Error reading Excel: {e}"}
-            )
-            del st.session_state["pending_user_msg"]
-            st.rerun()
+        # We store: cached_df, db_conn, db, cached_file_id
+        if "cached_file_id" not in st.session_state or st.session_state.cached_file_id != getattr(excel_file, "name", None):
+            t0 = time.time()
+            try:
+                df = pd.read_excel(excel_file, sheet_name=sheet_name if sheet_name else 0)
+            except Exception as e:
+                st.session_state.chat_history.append(
+                    {"role": "assistant", "content": f"Error reading Excel: {e}"}
+                )
+                del st.session_state["pending_user_msg"]
+                st.rerun()
 
-        db_path = "excel_chat.db"
-        conn = sqlite3.connect(db_path)
-        df.to_sql(table_name, conn, if_exists="replace", index=False)
-        db = SQLDatabase.from_uri(f"sqlite:///{db_path}")
+            db_path = "excel_chat.db"
+            # Use a persistent connection and allow multithread access for Streamlit
+            conn = sqlite3.connect(db_path, check_same_thread=False)
+            df.to_sql(table_name, conn, if_exists="replace", index=False)
+
+            # Create lightweight indices on first few columns (if sensible)
+            try:
+                cols_for_idx = [c for c in df.columns[:5]]
+                for col in cols_for_idx:
+                    try:
+                        conn.execute(f'CREATE INDEX IF NOT EXISTS idx_{table_name}_{col} ON {table_name}("{col}");')
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+
+            # Create SQLDatabase wrapper once
+            try:
+                db = SQLDatabase.from_uri(f"sqlite:///{db_path}")
+            except Exception:
+                db = None
+
+            st.session_state.cached_df = df
+            st.session_state.db_conn = conn
+            st.session_state.db = db
+            st.session_state.cached_file_id = getattr(excel_file, "name", None)
+
+            # Precompute metadata used in prompts (keep small)
+            def generate_ddl(df_in):
+                cols = []
+                for col, dtype in df_in.dtypes.items():
+                    if "int" in str(dtype):
+                        sql_type = "INTEGER"
+                    elif "float" in str(dtype):
+                        sql_type = "FLOAT"
+                    else:
+                        sql_type = "TEXT"
+                    cols.append(f'"{col}" {sql_type}')
+                return "CREATE TABLE excel_data (\n  " + ",\n  ".join(cols) + "\n);"
+
+            st.session_state.ddl_text = generate_ddl(df)
+            st.session_state.sample_rows = ensure_str(df.head(3).to_dict(orient="records"))
+
+            obj_cols = df.select_dtypes(include=["object"]).columns.tolist()
+            dim_vals = {col: df[col].dropna().unique().tolist()[:10] for col in obj_cols}
+            st.session_state.dimension_values_text = ensure_str(dim_vals)
+
+            # Date range text
+            MONTH_MAP = {
+                "January": 1,
+                "February": 2,
+                "March": 3,
+                "April": 4,
+                "May": 5,
+                "June": 6,
+                "July": 7,
+                "August": 8,
+                "September": 9,
+                "October": 10,
+                "November": 11,
+                "December": 12,
+            }
+            df_local = st.session_state.cached_df
+            if "Year" in df_local.columns and "Month" in df_local.columns:
+                try:
+                    min_year = int(df_local["Year"].min())
+                    max_year = int(df_local["Year"].max())
+                    min_year_months = df_local[df_local["Year"] == min_year]["Month"].dropna().unique().tolist()
+                    max_year_months = df_local[df_local["Year"] == max_year]["Month"].dropna().unique().tolist()
+                    min_year_months_sorted = sorted(min_year_months, key=lambda m: MONTH_MAP.get(m, 13))
+                    max_year_months_sorted = sorted(max_year_months, key=lambda m: MONTH_MAP.get(m, 13))
+                    if min_year_months_sorted and max_year_months_sorted:
+                        min_date = f"{min_year_months_sorted[0]} {min_year}"
+                        max_date = f"{max_year_months_sorted[-1]} {max_year}"
+                        st.session_state.date_range_text = f"Date Range from {min_date} till {max_date}"
+                    else:
+                        st.session_state.date_range_text = "Date range could not be determined from Month/Year values."
+                except Exception:
+                    st.session_state.date_range_text = "Date range could not be determined from Month/Year values."
+            else:
+                st.session_state.date_range_text = "Date range information not available (Month or Year column missing)."
+
+            t1 = time.time()
+            # small log
+            # st.experimental_set_query_params(_cache_load_time=round(t1-t0,2))
+
+        # Reuse cached artifacts
+        df = st.session_state.cached_df
+        conn = st.session_state.db_conn
+        db = st.session_state.db
 
         # ---------------------------------------
-        # LLM (for WHAT flow) + Question Type Classifier
+        # Reuse LLM instance (store in session_state)
         # ---------------------------------------
-        llm = ChatOpenAI(model=model, temperature=temperature)
+        if "llm" not in st.session_state:
+            st.session_state.llm = ChatOpenAI(model=model, temperature=temperature)
+        else:
+            # If model selection changed, recreate llm
+            existing_llm = st.session_state.llm
+            try:
+                if getattr(existing_llm, "model_name", None) != model:
+                    st.session_state.llm = ChatOpenAI(model=model, temperature=temperature)
+            except Exception:
+                pass
+
+        llm = st.session_state.llm
 
         # Python function classifier (not LLM)
         question_type = classify_question_type(user_msg).lower()
 
         # ----------------------------------------------------
-        # IF QUESTION TYPE = WHY → RUN RCA PIPELINE
+        # IF QUESTION TYPE = WHY → RUN RCA PIPELINE (cached)
         # ----------------------------------------------------
         if "why" in question_type:
-            try:
-                # Run RCA
-                rca_text, failure_type = run_rca(user_msg)
-                agent_output = rca_agent(user_msg, rca_text, failure_type)
-                combined_fig = plot_combined_rca(rca_text)
-            except Exception as e:
-                agent_output = f"RCA Error: {e}"
-                combined_fig = None
+            # simple caching for WHY queries
+            why_cache = st.session_state.setdefault("why_cache", {})
+            q_key = user_msg.strip().lower()
+            if q_key in why_cache:
+                agent_output, combined_fig_json = why_cache[q_key]
+            else:
+                try:
+                    rca_text, failure_type = run_rca(user_msg,df)
+                    agent_output = rca_agent(user_msg, rca_text, failure_type)
+                    combined_fig = plot_combined_rca(rca_text)
+                    combined_fig_json = combined_fig.to_json() if combined_fig is not None else None
+                except Exception as e:
+                    agent_output = f"RCA Error: {e}"
+                    combined_fig_json = None
+                why_cache[q_key] = (agent_output, combined_fig_json)
 
             # Save ONLY text in history (no chart)
             st.session_state.chat_history.append(
@@ -360,8 +468,8 @@ def app():
             )
 
             # Store chart in temporary buffer to render after rerun
-            if combined_fig is not None:
-                st.session_state["why_buffer_chart"] = combined_fig.to_json()
+            if combined_fig_json is not None:
+                st.session_state["why_buffer_chart"] = combined_fig_json
 
             # Clear pending message and rerun to render from history + buffer
             del st.session_state["pending_user_msg"]
@@ -370,116 +478,62 @@ def app():
         # ---------------------------------------
         # Metadata Extraction (for WHAT flow)
         # ---------------------------------------
-        def generate_ddl(df_in):
-            cols = []
-            for col, dtype in df_in.dtypes.items():
-                if "int" in str(dtype):
-                    sql_type = "INTEGER"
-                elif "float" in str(dtype):
-                    sql_type = "FLOAT"
-                else:
-                    sql_type = "TEXT"
-                cols.append(f'"{col}" {sql_type}')
-            return "CREATE TABLE excel_data (\n  " + ",\n  ".join(cols) + "\n);"
-
-        ddl_text = generate_ddl(df)
-        sample_rows = ensure_str(df.head(3).to_dict(orient="records"))
-
-        # Dimension values
-        dimension_values = {}
-        obj_cols = df.select_dtypes(include=["object"]).columns.tolist()
-        for col in obj_cols:
-            vals = df[col].dropna().unique().tolist()
-            dimension_values[col] = vals[:20]
-        dimension_values_text = ensure_str(dimension_values)
-
-        # Month → number mapping
-        MONTH_MAP = {
-            "January": 1,
-            "February": 2,
-            "March": 3,
-            "April": 4,
-            "May": 5,
-            "June": 6,
-            "July": 7,
-            "August": 8,
-            "September": 9,
-            "October": 10,
-            "November": 11,
-            "December": 12,
-        }
-
-        date_range_text = ""
-        if "Year" in df.columns and "Month" in df.columns:
-            min_year = int(df["Year"].min())
-            max_year = int(df["Year"].max())
-
-            min_year_months = (
-                df[df["Year"] == min_year]["Month"].dropna().unique().tolist()
-            )
-            max_year_months = (
-                df[df["Year"] == max_year]["Month"].dropna().unique().tolist()
-            )
-
-            min_year_months_sorted = sorted(
-                min_year_months,
-                key=lambda m: MONTH_MAP.get(m, 13),
-            )
-            max_year_months_sorted = sorted(
-                max_year_months,
-                key=lambda m: MONTH_MAP.get(m, 13),
-            )
-
-            if min_year_months_sorted and max_year_months_sorted:
-                min_date = f"{min_year_months_sorted[0]} {min_year}"
-                max_date = f"{max_year_months_sorted[-1]} {max_year}"
-                date_range_text = f"Date Range from {min_date} till {max_date}"
-            else:
-                date_range_text = (
-                    "Date range could not be determined from Month/Year values."
-                )
-        else:
-            date_range_text = (
-                "Date range information not available (Month or Year column missing)."
-            )
+        ddl_text = st.session_state.ddl_text
+        sample_rows = st.session_state.sample_rows
+        dimension_values_text = st.session_state.dimension_values_text
+        date_range_text = st.session_state.date_range_text
 
         # ---------------------------------------
         # Build SQL Generator Prompt (WHAT flow)
         # ---------------------------------------
+        # Reuse PromptTemplate objects (cheap) but avoid re-instantiating LLM
         sql_prompt_template = PromptTemplate.from_template(sql_prompt)
-
         generate_query = sql_prompt_template | llm
-        execute_query = QuerySQLDataBaseTool(db=db)
+        execute_query = QuerySQLDataBaseTool(db=db) if db is not None else None
         rephraser = build_rephraser(llm)
         chart_metadata_generator = build_chart_metadata_generator(llm)
 
         # ---------------------------------------
-        # Generate SQL
+        # Generate SQL (single LLM call)
         # ---------------------------------------
-        sql_ai_msg = generate_query.invoke(
-            {
-                "question": ensure_str(user_msg),
-                "ddl": ensure_str(ddl_text),
-                "sample_rows": ensure_str(sample_rows),
-                "dimension_values": ensure_str(dimension_values_text),
-                "date_range_text": ensure_str(date_range_text),
-            }
-        )
+        # We keep prompt inputs small to reduce tokens
+        sql_inputs = {
+            "question": ensure_str(user_msg),
+            "ddl": ensure_str(ddl_text),
+            "sample_rows": ensure_str(sample_rows),
+            "dimension_values": ensure_str(dimension_values_text),
+            "date_range_text": ensure_str(date_range_text),
+        }
+
+        sql_ai_msg = generate_query.invoke(sql_inputs)
         sql_raw = sql_ai_msg.content if hasattr(sql_ai_msg, "content") else str(sql_ai_msg)
         sql_clean = fix_month_order(clean_sql(sql_raw))
 
         # ---------------------------------------
-        # Execute query
+        # Execute query (with memoization)
         # ---------------------------------------
-        try:
-            df_result = pd.read_sql_query(sql_clean, conn)
+        query_cache = st.session_state.setdefault("query_cache", {})
+        cache_key = sql_clean
+        if cache_key in query_cache:
+            df_result = query_cache[cache_key]
+        else:
+            try:
+                # limit result size for interactivity
+                df_result = pd.read_sql_query(sql_clean, conn)
+                if len(df_result) > 5000:
+                    # keep a head for interactive display and cache smaller copy
+                    query_cache[cache_key] = df_result.head(1000)
+                else:
+                    query_cache[cache_key] = df_result
+            except Exception as e:
+                df_result = None
+                result_string = f"SQL Error: {e}"
+
+        if df_result is not None:
             result_string = df_result.to_string(index=False)
-        except Exception as e:
-            df_result = None
-            result_string = f"SQL Error: {e}"
 
         # ---------------------------------------
-        # Recommend Visualization Metadata
+        # Recommend Visualization Metadata (reuse LLM but small payload)
         # ---------------------------------------
         chart_type = "none"
         chart_title = ""
@@ -494,9 +548,7 @@ def app():
                 chart_metadata_raw = chart_metadata_generator.invoke(
                     {
                         "columns": ensure_str(list(df_result.columns)),
-                        "sample": ensure_str(
-                            df_result.head(5).to_dict(orient="records")
-                        ),
+                        "sample": ensure_str(df_result.head(5).to_dict(orient="records")),
                     }
                 )
                 chart_metadata = json.loads(chart_metadata_raw)
@@ -509,9 +561,7 @@ def app():
                 color_by = chart_metadata.get("color_by")
                 secondary_y_axis = chart_metadata.get("secondary_y_axis")
 
-                color_scheme = str(
-                    chart_metadata.get("color_scheme", "plotly")
-                ).lower()
+                color_scheme = str(chart_metadata.get("color_scheme", "plotly")).lower()
                 is_time_series = bool(chart_metadata.get("is_time_series", False))
                 trendline_flag = bool(chart_metadata.get("trendline", False))
                 regression_type = chart_metadata.get("regression_type")
@@ -523,10 +573,7 @@ def app():
         # ---------------------------------------
         # Natural Language Answer (WHAT flow)
         # ---------------------------------------
-        history_text = "\n".join(
-            f"{m['role']}: {m.get('content', '')}"
-            for m in st.session_state.chat_history
-        )
+        history_text = "\n".join(f"{m['role']}: {m.get('content', '')}" for m in st.session_state.chat_history)
 
         answer = rephraser.invoke(
             {
@@ -564,18 +611,16 @@ def app():
         msg_assistant = {
             "role": "assistant",
             "content": answer,
-            "df_result": (
-                df_result.to_dict(orient="list") if df_result is not None else None
-            ),
+            "df_result": (df_result.to_dict(orient="list") if df_result is not None else None),
             "chart": fig.to_json() if fig is not None else None,
             "type": "what",
         }
-        # st.dataframe(df_result, use_container_width=True)
-        
-        # st.plotly_chart(fig,use_container_width=True)
         st.session_state.chat_history.append(msg_assistant)
-        #st.stop()
+
+        # Clear pending message and rerun to render results from history
         del st.session_state["pending_user_msg"]
+        # small timing log (optional)
+        # st.experimental_set_query_params(_last_request_sec=round(time.time()-start_all,2))
         st.rerun()
 
     # ---------------------------------------
@@ -594,9 +639,7 @@ def app():
         QUESTIONS = []
 
     if "random_questions" not in st.session_state and QUESTIONS:
-        st.session_state.random_questions = random.sample(
-            QUESTIONS, min(3, len(QUESTIONS))
-        )
+        st.session_state.random_questions = random.sample(QUESTIONS, min(3, len(QUESTIONS)))
 
     # ---------------------------------------
     # Footer: Suggested Questions + Input (fixed at bottom)
@@ -611,17 +654,11 @@ def app():
                 st.session_state.user_query = ""
                 st.rerun()
 
-        st.markdown(
-            "<div class='chat-footer'><div class='chat-footer-inner'>",
-            unsafe_allow_html=True,
-        )
+        st.markdown("<div class='chat-footer'><div class='chat-footer-inner'>", unsafe_allow_html=True)
 
         if "random_questions" in st.session_state:
             if st.session_state.random_questions:
-                st.markdown(
-                    "<div class='suggested-box-title'>Suggested questions</div>",
-                    unsafe_allow_html=True,
-                )
+                st.markdown("<div class='suggested-box-title'>Suggested questions</div>", unsafe_allow_html=True)
 
                 for i, q in enumerate(st.session_state.random_questions):
                     button_key = f"suggest_btn_{i}"
@@ -638,5 +675,6 @@ def app():
         )
 
         st.markdown("</div></div>", unsafe_allow_html=True)
+
 if __name__ == "__main__":
     app()
