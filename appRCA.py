@@ -234,7 +234,7 @@ def app():
         table_name = "excel_data"
 
         #model = st.selectbox("LLM Model", ["gpt-4o-mini", "gpt-4o"], index=0)
-        model="gpt-5"
+        model="gpt-4o-mini"
         #temperature = st.slider("Temperature", 0.0, 1.0, 0.0)
         temperature=0.0
 
@@ -678,3 +678,4 @@ def app():
 
 if __name__ == "__main__":
     app()
+
