@@ -334,7 +334,7 @@ Now generate the final RCA explanation.
 """
 
     response = client.responses.create(
-        model="gpt-4o",
+        model="gpt-5",
         input=[
             {"role": "system", "content": planner_prompt},
             {"role": "user", "content": user_question}
@@ -366,6 +366,7 @@ user_question = "why is there a down in sales in march 2025?"
 # st.markdown("## 📊 Combined RCA Summary Chart")
 # combined_fig = plot_combined_rca(rca_text)
 # st.plotly_chart(combined_fig, use_container_width=True)
+
 
 
 
