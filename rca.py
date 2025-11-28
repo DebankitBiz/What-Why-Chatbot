@@ -155,7 +155,7 @@ def rca_for_dimension_table(contrib_df: pd.DataFrame,
     return final[dim_cols + ["pct_recent", "pct_history", "abs_change_pct"]].head(top_n)
 
 
-def advanced_rca(spike_date,
+def advanced_rca(df,spike_date,
                  freq: str,
                  failure_type: str = "higher",
                  history_periods: int | None = None,
@@ -241,10 +241,10 @@ NO text. NO markdown. NO explanation.
     return json.loads(match.group(0))
 
 
-def run_rca(user_question):
+def run_rca(user_question,df):
     params = rca_input(user_question)
 
-    rca_output = advanced_rca(
+    rca_output = advanced_rca(df,
         spike_date=params["spike_date"],
         freq=params["freq"],
         failure_type=params["failure_type"]
@@ -366,6 +366,7 @@ user_question = "why is there a down in sales in march 2025?"
 # st.markdown("## 📊 Combined RCA Summary Chart")
 # combined_fig = plot_combined_rca(rca_text)
 # st.plotly_chart(combined_fig, use_container_width=True)
+
 
 
 
