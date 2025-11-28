@@ -170,7 +170,7 @@ def advanced_rca(spike_date,
     ]
 
     metric_col = "Sales"
-    df = pd.read_excel("WMQ.xlsx")
+    #df = pd.read_excel("WMQ.xlsx")
 
     freq_code = normalize_freq(freq)
     spike_ts = pd.to_datetime(spike_date)
@@ -366,5 +366,6 @@ user_question = "why is there a down in sales in march 2025?"
 # st.markdown("## 📊 Combined RCA Summary Chart")
 # combined_fig = plot_combined_rca(rca_text)
 # st.plotly_chart(combined_fig, use_container_width=True)
+
 
 
