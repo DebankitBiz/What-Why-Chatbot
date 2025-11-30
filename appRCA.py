@@ -256,6 +256,15 @@ def app():
     # ---------------------------------------
     for msg in st.session_state.chat_history:
         with st.chat_message(msg["role"]):
+            # Restore chart if present (WHAT flow only; WHY does not save chart)
+            chart_json = msg.get("chart")
+            if chart_json:
+                try:
+                    st.write("### 📈 Visualization")
+                    fig_prev = pio.from_json(chart_json)
+                    st.plotly_chart(fig_prev, use_container_width=True)
+                except Exception:
+                    pass
             st.write(msg.get("content", ""))
 
             if msg["role"] == "assistant":
@@ -268,15 +277,7 @@ def app():
                     except Exception:
                         pass
 
-                # Restore chart if present (WHAT flow only; WHY does not save chart)
-                chart_json = msg.get("chart")
-                if chart_json:
-                    try:
-                        st.write("### 📈 Visualization")
-                        fig_prev = pio.from_json(chart_json)
-                        st.plotly_chart(fig_prev, use_container_width=True)
-                    except Exception:
-                        pass
+               
         msg["df_result"] = None
         msg["chart"] = None
 
@@ -678,4 +679,5 @@ def app():
 
 if __name__ == "__main__":
     app()
+
 
