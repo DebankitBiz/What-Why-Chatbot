@@ -462,7 +462,7 @@ def app():
                     "role": "assistant",
                     "content": agent_output,
                     "df_result": None,
-                    "chart": None,
+                    "chart": combined_fig_json,
                     "type": "why",
                 }
             )
@@ -678,6 +678,7 @@ def app():
 
 if __name__ == "__main__":
     app()
+
 
 
 
