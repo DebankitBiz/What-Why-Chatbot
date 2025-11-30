@@ -247,8 +247,8 @@ def app():
             st.session_state.chat_history = []
             if "pending_user_msg" in st.session_state:
                 del st.session_state["pending_user_msg"]
-            if "why_buffer_chart" in st.session_state:
-                del st.session_state["why_buffer_chart"]
+            #if "why_buffer_chart" in st.session_state:
+                #del st.session_state["why_buffer_chart"]
             st.rerun()
 
     # ---------------------------------------
@@ -283,15 +283,15 @@ def app():
     # ---------------------------------------
     # Render buffered WHY chart from last run (if any)
     # ---------------------------------------
-    if "why_buffer_chart" in st.session_state:
-        try:
-            with st.chat_message("assistant"):
-                fig_buf = pio.from_json(st.session_state["why_buffer_chart"])
-                st.plotly_chart(fig_buf, use_container_width=True)
-        except Exception:
-            pass
-        # Clear the buffer so it only shows once
-        del st.session_state["why_buffer_chart"]
+    #if "why_buffer_chart" in st.session_state:
+    #    try:
+    #        with st.chat_message("assistant"):
+    #            fig_buf = pio.from_json(st.session_state["why_buffer_chart"])
+    #             st.plotly_chart(fig_buf, use_container_width=True)
+    #    except Exception:
+    #        pass
+    #    # Clear the buffer so it only shows once
+    #    del st.session_state["why_buffer_chart"]
 
     # ---------------------------------------
     # If there is a new message to process (typed or clicked)
@@ -455,6 +455,7 @@ def app():
                     agent_output = f"RCA Error: {e}"
                     combined_fig_json = None
                 why_cache[q_key] = (agent_output, combined_fig_json)
+                
 
             # Save ONLY text in history (no chart)
             st.session_state.chat_history.append(
@@ -468,8 +469,8 @@ def app():
             )
 
             # Store chart in temporary buffer to render after rerun
-            if combined_fig_json is not None:
-                st.session_state["why_buffer_chart"] = combined_fig_json
+            #if combined_fig_json is not None:
+            #    st.session_state["why_buffer_chart"] = combined_fig_json
 
             # Clear pending message and rerun to render from history + buffer
             del st.session_state["pending_user_msg"]
@@ -678,6 +679,7 @@ def app():
 
 if __name__ == "__main__":
     app()
+
 
 
 
