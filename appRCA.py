@@ -279,7 +279,6 @@ def app():
 
                
         msg["df_result"] = None
-        msg["chart"] = None
 
     # ---------------------------------------
     # Render buffered WHY chart from last run (if any)
@@ -679,5 +678,6 @@ def app():
 
 if __name__ == "__main__":
     app()
+
 
 
