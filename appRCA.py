@@ -48,6 +48,9 @@ def app():
         unsafe_allow_html=True,
     )
 
+    # -----------------------------
+    # Keep ONLY warning-hiding CSS
+    # -----------------------------
     st.markdown(
         """
         <style>
@@ -55,54 +58,6 @@ def app():
         .stAlert { display: none !important; }
         .stNotification { display: none !important; }
         .st-emotion-cache-1wqrz03 { display: none !important; }  /* generic Streamlit warning banner */
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    # ---------------------------------------
-    # Sticky footer CSS (chat input fixed at bottom)
-    # ---------------------------------------
-    st.markdown(
-        """
-        <style>
-        .chat-footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            padding: 15px 20px 18px 20px;
-            background-color: #ffffff;
-            box-shadow: 0 -4px 12px rgba(0,0,0,0.1);
-            z-index: 9999 !important;
-            border-top: 1px solid #e6e6e6;
-        }
-
-        .chat-footer-inner {
-            max-width: 900px;
-            margin: 0 auto;
-        }
-
-        .stTextInput > div > div {
-            margin-bottom: 0px !important;
-        }
-
-        .suggested-button {
-            width: 100%;
-            text-align: left;
-            padding: 10px 12px;
-            border-radius: 8px;
-            border: 1px solid #dcdcdc;
-            background: #fafafa;
-            font-size: 14px;
-            cursor: pointer;
-        }
-
-        .suggested-box-title {
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 6px;
-        }
         </style>
         """,
         unsafe_allow_html=True,
@@ -229,14 +184,14 @@ def app():
         st.header("⚙️ Configuration")
 
         excel_file = st.file_uploader("Upload Excel File (.xlsx)", type=["xlsx"])
-        #sheet_name = st.text_input("Sheet Name (optional)", "")
-        sheet_name=""
+        # sheet_name = st.text_input("Sheet Name (optional)", "")
+        sheet_name = ""
         table_name = "excel_data"
 
-        #model = st.selectbox("LLM Model", ["gpt-4o-mini", "gpt-4o"], index=0)
-        model="gpt-4o-mini"
-        #temperature = st.slider("Temperature", 0.0, 1.0, 0.0)
-        temperature=0.0
+        # model = st.selectbox("LLM Model", ["gpt-4o-mini", "gpt-4o"], index=0)
+        model = "gpt-4o-mini"
+        # temperature = st.slider("Temperature", 0.0, 1.0, 0.0)
+        temperature = 0.0
 
         # api_key = st.text_input("OPENAI_API_KEY", type="password")
         # if api_key:
@@ -247,8 +202,6 @@ def app():
             st.session_state.chat_history = []
             if "pending_user_msg" in st.session_state:
                 del st.session_state["pending_user_msg"]
-            #if "why_buffer_chart" in st.session_state:
-                #del st.session_state["why_buffer_chart"]
             st.rerun()
 
     # ---------------------------------------
@@ -277,21 +230,8 @@ def app():
                     except Exception:
                         pass
 
-               
+        # prevent storing large dataframes repeatedly in history
         msg["df_result"] = None
-
-    # ---------------------------------------
-    # Render buffered WHY chart from last run (if any)
-    # ---------------------------------------
-    #if "why_buffer_chart" in st.session_state:
-    #    try:
-    #        with st.chat_message("assistant"):
-    #            fig_buf = pio.from_json(st.session_state["why_buffer_chart"])
-    #             st.plotly_chart(fig_buf, use_container_width=True)
-    #    except Exception:
-    #        pass
-    #    # Clear the buffer so it only shows once
-    #    del st.session_state["why_buffer_chart"]
 
     # ---------------------------------------
     # If there is a new message to process (typed or clicked)
@@ -303,7 +243,7 @@ def app():
         # ✅ Only append user to history, don't render directly
         st.session_state.chat_history.append({"role": "user", "content": user_msg})
 
-        # If no Excel file, answer and rerun (keep footer visible)
+        # If no Excel file, answer and rerun
         if excel_file is None:
             st.session_state.chat_history.append(
                 {"role": "assistant", "content": "Please upload an Excel file first."}
@@ -409,8 +349,6 @@ def app():
                 st.session_state.date_range_text = "Date range information not available (Month or Year column missing)."
 
             t1 = time.time()
-            # small log
-            # st.experimental_set_query_params(_cache_load_time=round(t1-t0,2))
 
         # Reuse cached artifacts
         df = st.session_state.cached_df
@@ -447,7 +385,7 @@ def app():
                 agent_output, combined_fig_json = why_cache[q_key]
             else:
                 try:
-                    rca_text, failure_type = run_rca(user_msg,df)
+                    rca_text, failure_type = run_rca(user_msg, df)
                     agent_output = rca_agent(user_msg, rca_text, failure_type)
                     combined_fig = plot_combined_rca(rca_text)
                     combined_fig_json = combined_fig.to_json() if combined_fig is not None else None
@@ -455,9 +393,8 @@ def app():
                     agent_output = f"RCA Error: {e}"
                     combined_fig_json = None
                 why_cache[q_key] = (agent_output, combined_fig_json)
-                
 
-            # Save ONLY text in history (no chart)
+            # Save text + chart in history
             st.session_state.chat_history.append(
                 {
                     "role": "assistant",
@@ -468,11 +405,6 @@ def app():
                 }
             )
 
-            # Store chart in temporary buffer to render after rerun
-            #if combined_fig_json is not None:
-            #    st.session_state["why_buffer_chart"] = combined_fig_json
-
-            # Clear pending message and rerun to render from history + buffer
             del st.session_state["pending_user_msg"]
             st.rerun()
 
@@ -487,7 +419,6 @@ def app():
         # ---------------------------------------
         # Build SQL Generator Prompt (WHAT flow)
         # ---------------------------------------
-        # Reuse PromptTemplate objects (cheap) but avoid re-instantiating LLM
         sql_prompt_template = PromptTemplate.from_template(sql_prompt)
         generate_query = sql_prompt_template | llm
         execute_query = QuerySQLDataBaseTool(db=db) if db is not None else None
@@ -497,7 +428,6 @@ def app():
         # ---------------------------------------
         # Generate SQL (single LLM call)
         # ---------------------------------------
-        # We keep prompt inputs small to reduce tokens
         sql_inputs = {
             "question": ensure_str(user_msg),
             "ddl": ensure_str(ddl_text),
@@ -519,10 +449,8 @@ def app():
             df_result = query_cache[cache_key]
         else:
             try:
-                # limit result size for interactivity
                 df_result = pd.read_sql_query(sql_clean, conn)
                 if len(df_result) > 5000:
-                    # keep a head for interactive display and cache smaller copy
                     query_cache[cache_key] = df_result.head(1000)
                 else:
                     query_cache[cache_key] = df_result
@@ -534,7 +462,7 @@ def app():
             result_string = df_result.to_string(index=False)
 
         # ---------------------------------------
-        # Recommend Visualization Metadata (reuse LLM but small payload)
+        # Recommend Visualization Metadata
         # ---------------------------------------
         chart_type = "none"
         chart_title = ""
@@ -620,14 +548,7 @@ def app():
 
         # Clear pending message and rerun to render results from history
         del st.session_state["pending_user_msg"]
-        # small timing log (optional)
-        # st.experimental_set_query_params(_last_request_sec=round(time.time()-start_all,2))
         st.rerun()
-
-    # ---------------------------------------
-    # Leave space so bottom messages aren't hidden behind footer
-    # ---------------------------------------
-    st.markdown("<div style='height: 300px;'></div>", unsafe_allow_html=True)
 
     # ---------------------------------------
     # Load Questions from JSON for suggestions
@@ -642,45 +563,28 @@ def app():
     if "random_questions" not in st.session_state and QUESTIONS:
         st.session_state.random_questions = random.sample(QUESTIONS, min(3, len(QUESTIONS)))
 
-    # ---------------------------------------
-    # Footer: Suggested Questions + Input (fixed at bottom)
-    # Only show after Excel file upload
-    # ---------------------------------------
+    # ===============================================================
+    # 🔥 Frozen Chat Input + Suggested Questions (Option A)
+    # ===============================================================
     if excel_file is not None:
 
-        def submit_text():
-            text = st.session_state.user_query.strip()
-            if text:
-                st.session_state.pending_user_msg = text
-                st.session_state.user_query = ""
-                st.rerun()
+        # Suggested questions ABOVE the fixed chat input
+        if "random_questions" in st.session_state and st.session_state.random_questions:
+            st.markdown("### Suggested Questions")
+            cols = st.columns(len(st.session_state.random_questions))
 
-        st.markdown("<div class='chat-footer'><div class='chat-footer-inner'>", unsafe_allow_html=True)
+            for i, q in enumerate(st.session_state.random_questions):
+                if cols[i].button(q):
+                    st.session_state.pending_user_msg = q
+                    st.rerun()
 
-        if "random_questions" in st.session_state:
-            if st.session_state.random_questions:
-                st.markdown("<div class='suggested-box-title'>Suggested questions</div>", unsafe_allow_html=True)
+        # Streamlit-native frozen chat input
+        user_msg = st.chat_input("Type your message...")
 
-                for i, q in enumerate(st.session_state.random_questions):
-                    button_key = f"suggest_btn_{i}"
-                    if st.button(q, key=button_key):
-                        st.session_state.pending_user_msg = q
-                        st.rerun()
-
-        st.text_input(
-            " ",
-            placeholder="Type your message here...",
-            key="user_query",
-            on_change=submit_text,
-            label_visibility="collapsed",
-        )
-
-        st.markdown("</div></div>", unsafe_allow_html=True)
+        if user_msg:
+            st.session_state.pending_user_msg = user_msg
+            st.rerun()
 
 if __name__ == "__main__":
     app()
-
-
-
-
 
