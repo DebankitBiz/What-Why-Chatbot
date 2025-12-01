@@ -598,7 +598,7 @@ def app():
         # Fixed suggested questions ABOVE the chat input
         suggested_questions = [
             "What is the month-over-month sales performance?",
-            "What is the weekly sales performance trend?",
+            "How do weekly sales compare across different Channels or Sub Channels?",
             "What is the quarter-over-quarter sales performance?",
             "Why was there a decline in sales in April 2025?",
             "Explain the most recent quarterly sales trend",
