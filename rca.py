@@ -225,7 +225,7 @@ NO text. NO markdown. NO explanation.
 """
 
     response = client.responses.create(
-        model="gpt-5",
+        model="gpt-4o-mini",
         input=[
             {"role": "system", "content": prompt},
             {"role": "user", "content": user_question}
@@ -363,7 +363,7 @@ Now produce the final short executive insight summary.
 
 
     response = client.responses.create(
-        model="gpt-5",
+        model="gpt-4o-mini",
         input=[
             {"role": "system", "content": prompt},
             {"role": "user", "content": user_question}
@@ -395,5 +395,6 @@ user_question = "why is there a down in sales in march 2025?"
 # st.markdown("## 📊 Combined RCA Summary Chart")
 # combined_fig = plot_combined_rca(rca_text)
 # st.plotly_chart(combined_fig, use_container_width=True)
+
 
 
