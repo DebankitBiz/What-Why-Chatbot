@@ -43,10 +43,10 @@ def app():
         "<h1 style='text-align: center;'>📊 Structured Data Assistant Chatbot</h1>",
         unsafe_allow_html=True,
     )
-    st.markdown(
-        "<p style='text-align: center; font-size: 16px;'>Upload an Excel file and chat with your data in natural language.</p>",
-        unsafe_allow_html=True,
-    )
+    #st.markdown(
+    #    "<p style='text-align: center; font-size: 16px;'>Upload an Excel file and chat with your data in natural language.</p>",
+    #    unsafe_allow_html=True,
+    #)
 
     # -----------------------------
     # Keep ONLY warning-hiding CSS
@@ -587,4 +587,5 @@ def app():
 
 if __name__ == "__main__":
     app()
+
 
