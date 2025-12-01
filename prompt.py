@@ -205,13 +205,50 @@ def classify_question_type(question: str) -> str:
 
     # --- WHY question patterns ---
     why_patterns = [
-        r"^why\b",
-        r"\bwhy is\b",
-        r"\bwhy are\b",
-        r"\bwhy did\b",
-        r"\bwhy does\b",
-        r"\bwhy has\b",
-    ]
+    r"^why\b",                     # why ... ?
+    r"\bwhy is\b",
+    r"\bwhy are\b",
+    r"\bwhy did\b",
+    r"\bwhy does\b",
+    r"\bwhy do\b",
+    r"\bwhy has\b",
+    r"\bwhy have\b",
+    r"\bwhy was\b",
+    r"\bwhy were\b",
+    r"\bwhy might\b",
+    r"\bwhy could\b",
+
+    # Explain questions
+    r"^explain\b",
+    r"\bexplain why\b",
+    r"\bexplain the reason\b",
+    r"\bexplain this\b",
+    r"\bexplain that\b",
+
+    # Reason-based questions
+    r"\breason\b",
+    r"\bwhat is the reason\b",
+    r"\bwhat was the reason\b",
+    r"\bfor what reason\b",
+    r"\bgive me the reason\b",
+
+    # Causal phrases
+    r"\bwhat caused\b",
+    r"\bwhat is causing\b",
+    r"\bwhat was causing\b",
+    r"\bwhat could have caused\b",
+
+    # Decline / spike / increase — natural RCA triggers
+    r"\bwhy was there\b",
+    r"\bwhy is there\b",
+    r"\bwhy are there\b",
+    r"\bhow come\b",
+
+    # Ask for analysis
+    r"\broot cause\b",
+    r"\bcause of\b",
+    r"\breason for\b",
+]
 
     # Check WHY first because WHY questions are more specific
     for pattern in why_patterns:
