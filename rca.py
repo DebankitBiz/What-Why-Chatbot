@@ -292,26 +292,39 @@ Write 2–3 crisp sentences explaining WHY the {direction_text} happened.
 
 ====================================================
 ### KEY DRIVERS (KEEP SHORT)
+
 **IMPORTANT: Show a MAXIMUM OF 3 items in each section. Never list more than 3.**
+**IMPORTANT: Always include the dimension name AND its value.**
+**IMPORTANT: Always use “increased by” or “decreased by” — NEVER use “changed by.”**
+**IMPORTANT: Only include drivers where the absolute value is >= 1.00% (±1%). Ignore anything smaller.**
 
 #### Core Drivers
 List ONLY the top contributors (correct direction only), max 3.
+Only include drivers with absolute value >= 1.00%.
 Format:
-- <Item> increased/decreased by ±X.XX%, with one short business interpretation.
+- <Dimension Name> increased by ±X.XX% due to <short business interpretation>.
+OR
+- <Dimension Name> decreased by ±X.XX% due to <short business interpretation>.
 
 #### Supporting Drivers
-List up to 3 smaller contributors.
+List up to 3 smaller contributors (but only those >= ±1.00%).
 Format:
-- <Item> changed by ±X.XX%.
+- <Dimension Name> increased by ±X.XX%.
+OR
+- <Dimension Name> decreased by ±X.XX%.
 
-#### Interaction Effects 
+#### Interaction Effects
 Show at most the top 3 interactions.
-Rewrite all combinations in natural language:
-- "<Product> and <Team/Region> increased/decreased by ±X.XX%, due to <simple reason>."
+Only include interactions where abs_change_pct >= 1.00%.
+Rewrite combinations in natural language:
+- "<Dimension A> and <Dimension B> increased by ±X.XX% due to <simple reason>."
+OR
+- "<Dimension A> and <Dimension B> decreased by ±X.XX% due to <simple reason>."
 
 Rules:
 - No symbols like × or +.
 - Keep only the most relevant interactions (max 3).
+- Always use “increased by” or “decreased by,” never “changed by.”
 
 ====================================================
 ### RULES
@@ -330,6 +343,8 @@ Here are the RCA tables:
 
 Now produce the final short executive insight summary.
 """
+
+
 
 
 
