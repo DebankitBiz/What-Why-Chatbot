@@ -226,7 +226,18 @@ def app():
             if "pending_user_msg" in st.session_state:
                 del st.session_state["pending_user_msg"]
             st.rerun()
+    
+    def format_value(x):
+    # Floats → round + comma string
+        if isinstance(x, float):
+            x = round(x)
+            return f"{x:,}"
 
+        # Integers → comma string
+        if isinstance(x, int):
+            return f"{x:,}"
+
+        return x 
     # ---------------------------------------
     # Render previous Chat History (with charts)
     # ---------------------------------------
@@ -249,7 +260,12 @@ def app():
                 if df_saved is not None:
                     try:
                         df_prev = pd.DataFrame(df_saved)
-                        st.dataframe(df_prev, use_container_width=True)
+                        df_prev = df_prev.reset_index(drop=True)
+                        df_prev = df_prev.copy()
+                        df_prev.loc[:, df_prev.columns != "Year"] = (
+                            df_prev.loc[:, df_prev.columns != "Year"].applymap(format_value)
+                        )
+                        st.dataframe(df_prev, use_container_width=True,hide_index=True)
                     except Exception:
                         pass
 
@@ -593,9 +609,7 @@ def app():
     # ===============================================================
     if excel_file is not None:
         
-        
-
-        # Fixed suggested questions ABOVE the chat input
+         # Fixed suggested questions ABOVE the chat input
         suggested_questions = [
             "What is the month-over-month sales performance?",
             "How do weekly sales compare across different Channels or Sub Channels?",
