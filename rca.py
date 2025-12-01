@@ -284,42 +284,55 @@ Always align the narrative with the direction (spike vs. decline).
 ### 2. STRUCTURE (MANDATORY — SHORT, CLEAN, BUSINESS-FRIENDLY)
 
 ### EXECUTIVE SUMMARY
+
 Write 2–3 crisp sentences explaining WHY the {direction_text} happened.
+Mandatory requirements:
 - Include 1–2 important numbers (e.g., overall uplift %, biggest driver %).
+- Include **the dimension name AND its dimension type** for key drivers  
+  (e.g., “Antiseptics (Product Class) decreased by -8.42%” or  
+        “Symdocet (Product) increased by +6.98%”).
 - Clearly state whether it was a spike or decline.
 - Focus on the business story, not technical details.
 - Keep the language simple, clear, and executive-friendly.
 
 ====================================================
-### KEY DRIVERS (KEEP SHORT)
+### KEY DRIVERS
 
-**IMPORTANT: Show a MAXIMUM OF 3 items in each section. Never list more than 3.**
-**IMPORTANT: Always include the dimension name AND its value.**
-**IMPORTANT: Always use “increased by” or “decreased by” — NEVER use “changed by.”**
+**IMPORTANT: Show a MAXIMUM OF 3 items in each section. Never list more than 3.**  
+**IMPORTANT: Always include the dimension name, its dimension type, AND its value.**  
+**IMPORTANT: Always use “increased by” or “decreased by” — NEVER “changed by.”**  
 **IMPORTANT: Only include drivers where the absolute value is >= 1.00% (±1%). Ignore anything smaller.**
 
 #### Core Drivers
-List ONLY the top contributors (correct direction only), max 3.
+
+List ONLY the top contributors (correct direction only), max 3.  
+Always include dimension type.  
 Only include drivers with absolute value >= 1.00%.
+
 Format:
-- <Dimension Name> increased by ±X.XX% due to <short business interpretation>.
+- <Dimension Name> (<Dimension Type>) increased by ±X.XX% due to <short business interpretation>.
 OR
-- <Dimension Name> decreased by ±X.XX% due to <short business interpretation>.
+- <Dimension Name> (<Dimension Type>) decreased by ±X.XX% due to <short business interpretation>.
 
 #### Supporting Drivers
-List up to 3 smaller contributors (but only those >= ±1.00%).
+
+List up to 3 smaller contributors (but only those >= ±1.00%).  
+Dimension type optional (include only if clear).
+
 Format:
 - <Dimension Name> increased by ±X.XX%.
 OR
 - <Dimension Name> decreased by ±X.XX%.
 
 #### Interaction Effects
-Show at most the top 3 interactions.
-Only include interactions where abs_change_pct >= 1.00%.
+
+Show at most the top 3 interactions.  
+Only include interactions where abs_change_pct >= 1.00%.  
+
 Rewrite combinations in natural language:
-- "<Dimension A> and <Dimension B> increased by ±X.XX% due to <simple reason>."
+- "<Dimension A> (<Type A>) and <Dimension B> (<Type B>) increased by ±X.XX% due to <simple reason>."
 OR
-- "<Dimension A> and <Dimension B> decreased by ±X.XX% due to <simple reason>."
+- "<Dimension A> (<Type A>) and <Dimension B> (<Type B>) decreased by ±X.XX% due to <simple reason>."
 
 Rules:
 - No symbols like × or +.
