@@ -40,7 +40,7 @@ def app():
     st.set_page_config(page_title="Structured Data Assistant", page_icon="📊", layout="wide")
 
     st.markdown(
-        "<h1 style='text-align: center;'>📊 Understand trends using GenAI</h1>",
+        "<h1 style='text-align: center;'>📊 Decoding underlying trends</h1>",
         unsafe_allow_html=True,
     )
     #st.markdown(
@@ -601,6 +601,7 @@ def app():
 
 if __name__ == "__main__":
     app()
+
 
 
 
