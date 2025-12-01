@@ -567,16 +567,30 @@ def app():
     # 🔥 Frozen Chat Input + Suggested Questions (Option A)
     # ===============================================================
     if excel_file is not None:
+        
+        
 
-        # Suggested questions ABOVE the fixed chat input
-        if "random_questions" in st.session_state and st.session_state.random_questions:
-            st.markdown("### Suggested Questions")
-            cols = st.columns(len(st.session_state.random_questions))
+        # Fixed suggested questions ABOVE the chat input
+        suggested_questions = [
+            "What is the month-over-month sales performance?",
+            "What is the weekly sales performance?",
+            "What is the quarter-over-quarter sales performance?",
+            "Why was there a decline in sales in April 2025?",
+            "Why was there a spike in sales in Q4 2025?",
+            "Why was there an increase in sales during the first week of July 2025?"
+        ]
 
-            for i, q in enumerate(st.session_state.random_questions):
-                if cols[i].button(q):
-                    st.session_state.pending_user_msg = q
-                    st.rerun()
+        st.markdown("### Suggested Questions")
+
+        # Create 3 columns
+        cols = st.columns(3)
+
+        # Render 6 buttons: 3 per row × 2 rows
+        for i, q in enumerate(suggested_questions):
+            col = cols[i % 3]
+            if col.button(q):
+                st.session_state.pending_user_msg = q
+                st.rerun()
 
         # Streamlit-native frozen chat input
         user_msg = st.chat_input("Type your message...")
