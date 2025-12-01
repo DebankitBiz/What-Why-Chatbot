@@ -11,7 +11,7 @@ def visual(df_result,x_axis,y_axis,color_by,secondary_y_axis,chart_type,chart_ti
 
         # ADVANCED VISUALIZATION ENGINE (PATCHED)
         # =========================================
-       
+        st.write("### 📈 Visualization")
 
         if df_result is not None and not df_result.empty:
 
@@ -309,7 +309,7 @@ def plot_combined_rca(rca_results):
     ))
 
     fig.update_layout(
-        title="RCA Summary — Top Contributors Across All Dimensions",
+        title="Top Contributors Across All Dimensions",
         xaxis_title="Driver",
         yaxis_title="% Contribution",
         barmode="group",

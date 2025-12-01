@@ -33,14 +33,14 @@ def app():
 
     from visual import visual, plot_combined_rca
     from prompt import sql_prompt, viz_prompt, answer_prompt, classify_question_type
-    from rca import rca_agent, run_rca
+    from rca import rca_agent, run_rca , rca_input
 
     warnings.filterwarnings("ignore")
 
     st.set_page_config(page_title="Structured Data Assistant", page_icon="📊", layout="wide")
 
     st.markdown(
-        "<h1 style='text-align: center;'>📊 Decoding underlying trends</h1>",
+        "<h1 style='text-align: center;'>📊 Understand trends using GenAI</h1>",
         unsafe_allow_html=True,
     )
     #st.markdown(
@@ -62,6 +62,29 @@ def app():
         """,
         unsafe_allow_html=True,
     )
+
+    # CSS: make streamlit buttons uniform width and center them
+    st.markdown(
+    """
+    <style>
+    /* target native Streamlit buttons */
+    .stButton>button {
+      width: 100%;                /* try to fill the column */
+      max-width: 320px;          /* cap width so all columns look equal */
+      margin: 6px auto;          /* center the capped button inside column */
+      text-align: center;        /* center label text */
+      white-space: normal;       /* allow wrapping for long labels */
+      word-wrap: break-word;
+      padding: .45rem .8rem;     /* nicer padding */
+      border-radius: 8px;        /* optional */
+    }
+
+    /* Optional: increase spacing between rows/columns */
+    .css-1l02zno { margin-bottom: 0.6rem; } 
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
     # ---------------------------------------
     # Chat History
@@ -377,7 +400,7 @@ def app():
         # ----------------------------------------------------
         # IF QUESTION TYPE = WHY → RUN RCA PIPELINE (cached)
         # ----------------------------------------------------
-        if "why" in question_type:
+        if "why"  in question_type:
             # simple caching for WHY queries
             why_cache = st.session_state.setdefault("why_cache", {})
             q_key = user_msg.strip().lower()
@@ -385,6 +408,8 @@ def app():
                 agent_output, combined_fig_json = why_cache[q_key]
             else:
                 try:
+                    rca_input_text = rca_input(user_msg)
+                    st.write(rca_input_text)
                     rca_text, failure_type = run_rca(user_msg, df)
                     agent_output = rca_agent(user_msg, rca_text, failure_type)
                     combined_fig = plot_combined_rca(rca_text)
@@ -573,22 +598,22 @@ def app():
         # Fixed suggested questions ABOVE the chat input
         suggested_questions = [
             "What is the month-over-month sales performance?",
-            "What is the weekly sales performance?",
+            "What is the weekly sales performance trend?",
             "What is the quarter-over-quarter sales performance?",
             "Why was there a decline in sales in April 2025?",
-            "Why was there a spike in sales in Q4 2025?",
+            "Explain the most recent quarterly sales trend",
             "Why was there an increase in sales during the first week of July 2025?"
         ]
 
         st.markdown("### Suggested Questions")
 
         # Create 3 columns
-        cols = st.columns(3)
+        cols = st.columns([1, 1, 1], gap="large")
 
         # Render 6 buttons: 3 per row × 2 rows
         for i, q in enumerate(suggested_questions):
             col = cols[i % 3]
-            if col.button(q):
+            if col.button(q, key=f"sugg_{i}"):
                 st.session_state.pending_user_msg = q
                 st.rerun()
 
@@ -601,7 +626,6 @@ def app():
 
 if __name__ == "__main__":
     app()
-
 
 
 

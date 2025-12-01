@@ -159,7 +159,7 @@ def advanced_rca(df,spike_date,
                  freq: str,
                  failure_type: str = "higher",
                  history_periods: int | None = None,
-                 top_n: int = 5):
+                 top_n: int = 3):
 
     dim_1d = ["Product Name", "Region", "Product Class", "Sales Team"]
 
@@ -170,7 +170,6 @@ def advanced_rca(df,spike_date,
     ]
 
     metric_col = "Sales"
-    #df = pd.read_excel("WMQ.xlsx")
 
     freq_code = normalize_freq(freq)
     spike_ts = pd.to_datetime(spike_date)
@@ -217,15 +216,16 @@ def rca_input(user_question):
 You generate ONLY JSON.
 Format:
 {
-  "spike_date": "YYYY-MM-DD",
-  "freq": "weekly/monthly/quarterly/daily",
+  "spike_date": "2025-MM-DD",
+  "freq": "weekly/monthly/quarterly",
   "failure_type": "higher/lower"
 }
+The year MUST always be 2025. No other year is allowed.
 NO text. NO markdown. NO explanation.
 """
 
     response = client.responses.create(
-        model="gpt-4o",
+        model="gpt-5",
         input=[
             {"role": "system", "content": prompt},
             {"role": "user", "content": user_question}
@@ -251,6 +251,7 @@ def run_rca(user_question,df):
     )
 
     return rca_output, params["failure_type"]
+
 
 
 def rca_agent(user_question, rca_text, failure_type):
@@ -313,7 +314,11 @@ Format:
 
 Include only combinations with abs_change_pct >= 0.50%.
 
+## 4. Offsetting Factors (Optional)
+List contributors in the opposite direction.
 
+Format:
+- <Item> changed by ±X.XX%
 
 ====================================================
 ### 3. FORMATTING RULES
@@ -334,7 +339,7 @@ Now generate the final RCA explanation.
 """
 
     response = client.responses.create(
-        model="gpt-4o",
+        model="gpt-5",
         input=[
             {"role": "system", "content": planner_prompt},
             {"role": "user", "content": user_question}
@@ -366,11 +371,5 @@ user_question = "why is there a down in sales in march 2025?"
 # st.markdown("## 📊 Combined RCA Summary Chart")
 # combined_fig = plot_combined_rca(rca_text)
 # st.plotly_chart(combined_fig, use_container_width=True)
-
-
-
-
-
-
 
 
