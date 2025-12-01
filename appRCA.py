@@ -40,7 +40,7 @@ def app():
     st.set_page_config(page_title="Structured Data Assistant", page_icon="📊", layout="wide")
 
     st.markdown(
-        "<h1 style='text-align: center;'>📊 Understand trends using GenAI</h1>",
+        "<h1 style='text-align: center;'>📊 Decoding underlying trends</h1>",
         unsafe_allow_html=True,
     )
     #st.markdown(
@@ -268,7 +268,7 @@ def app():
                         st.dataframe(df_prev, use_container_width=True,hide_index=True)
                     except Exception:
                         pass
-
+                st.markdown("---")
         # prevent storing large dataframes repeatedly in history
         msg["df_result"] = None
 
