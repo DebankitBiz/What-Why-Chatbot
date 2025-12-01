@@ -254,11 +254,10 @@ def visual(df_result,x_axis,y_axis,color_by,secondary_y_axis,chart_type,chart_ti
 def plot_combined_rca(rca_results):
     """
     Plots the top contributor from each dimension in a clean readable format.
+    Sorted by delta (pct_recent - pct_history) in decreasing order.
     """
 
-    labels = []
-    spike_vals = []
-    hist_vals = []
+    rows = []  # temporary list to sort later
 
     for dim_name, df in rca_results.items():
         if df.empty:
@@ -277,34 +276,45 @@ def plot_combined_rca(rca_results):
         elif len(dim_cols) == 3:
             readable_dim = f"{dim_cols[0]}, {dim_cols[1]} and {dim_cols[2]}"
         else:
-            readable_dim = dim_name  # fallback
+            readable_dim = dim_name
 
         # Build readable item text
         if len(dim_cols) == 1:
             item_text = str(top[dim_cols[0]])
         else:
-            # Multiple dimensions → join with |
             item_text = " | ".join(str(top[c]) for c in dim_cols)
 
         final_label = f"{readable_dim} → {item_text}"
 
-        labels.append(final_label)
-        spike_vals.append(top["pct_recent"])
-        hist_vals.append(top["pct_history"])
+        rows.append({
+            "label": final_label,
+            "spike": top["pct_recent"],
+            "hist": top["pct_history"],
+            "delta": abs(top["pct_recent"] - top["pct_history"])
+        })
 
+    # Sort by delta descending
+    sorted_rows = sorted(rows, key=lambda x: x["delta"], reverse=True)
+
+    # Extract sorted lists
+    labels = [r["label"] for r in sorted_rows]
+    spike_vals = [r["spike"] for r in sorted_rows]
+    hist_vals  = [r["hist"] for r in sorted_rows]
+
+    # Plotly chart
     fig = go.Figure()
 
     fig.add_trace(go.Bar(
         x=labels,
         y=spike_vals,
-        name="Change Period (%)",
+        name="Specified Period",
         marker_color="#1f77b4"
     ))
 
     fig.add_trace(go.Bar(
         x=labels,
         y=hist_vals,
-        name="Historical Avg (%)",
+        name="Historical Avg",
         marker_color="#c7c7c7"
     ))
 
