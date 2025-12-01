@@ -408,8 +408,8 @@ def app():
                 agent_output, combined_fig_json = why_cache[q_key]
             else:
                 try:
-                    rca_input_text = rca_input(user_msg)
-                    st.write(rca_input_text)
+                    # rca_input_text = rca_input(user_msg)
+                    # st.write(rca_input_text)
                     rca_text, failure_type = run_rca(user_msg, df)
                     agent_output = rca_agent(user_msg, rca_text, failure_type)
                     combined_fig = plot_combined_rca(rca_text)
