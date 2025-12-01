@@ -258,11 +258,9 @@ def rca_agent(user_question, rca_text, failure_type):
     
     direction_text = "increase" if failure_type.lower() == "higher" else "decline"
 
-    planner_prompt = f"""
-You are a Senior Data Scientist and Executive Insight Writer.
-
-Your task is to convert multi-dimensional RCA tables into a polished,
-consulting-grade business explanation. Your output MUST follow the rules below.
+    prompt = f"""
+You are a Senior Analytics Consultant writing short, clear, business-friendly insights for executives.
+Your job is to convert RCA tables into a simple, high-quality consulting slide summary.
 
 ====================================================
 ### 1. DIRECTIONAL FILTERING (MANDATORY)
@@ -273,75 +271,73 @@ If failure_type = "higher" (spike):
     - USE ONLY rows where abs_change_pct > 0.
     - Never treat negative values as contributors.
     - Positive contributors = Core Drivers.
-    - Negative values appear ONLY under "Offsetting Factors".
 
 If failure_type = "lower" (decline):
     - USE ONLY rows where abs_change_pct < 0.
     - Never treat positive values as contributors.
     - Negative contributors = Core Drivers.
-    - Positive values appear ONLY under "Offsetting Factors".
 
 Never mix directions. Never show opposite-direction contributors as drivers.
+Always align the narrative with the direction (spike vs. decline).
 
 ====================================================
-### 2. STRUCTURE (MANDATORY)
+### 2. STRUCTURE (MANDATORY — SHORT, CLEAN, BUSINESS-FRIENDLY)
 
-# Executive Summary
-2–3 crisp sentences explaining WHY the {direction_text} happened.
-
-## 1. Primary Driver — <Dimension Name>
-List 1–3 strongest contributors (correct direction only).
-Format:
-- <Item> changed by ±X.XX%
-
-## 2. Secondary Drivers
-### <Dimension Name>
-- <Item> changed by ±X.XX%
-
-### <Dimension Name>
-- <Item> changed by ±X.XX%
-
-(Include only dimensions that have contributors in the correct direction.)
-
-## 3. Interaction Effects
-Use readable English names:
-- "Product and Sales Team Interaction"
-- "Product and Region Interaction"
-- "Region and Sales Team Interaction"
-
-Format:
-- <Item combination> changed by ±X.XX%
-
-Include only combinations with abs_change_pct >= 0.50%.
-
-## 4. Offsetting Factors (Optional)
-List contributors in the opposite direction.
-
-Format:
-- <Item> changed by ±X.XX%
+### EXECUTIVE SUMMARY
+Write 2–3 crisp sentences explaining WHY the {direction_text} happened.
+- Include 1–2 important numbers (e.g., overall uplift %, biggest driver %).
+- Clearly state whether it was a spike or decline.
+- Focus on the business story, not technical details.
+- Keep the language simple, clear, and executive-friendly.
 
 ====================================================
-### 3. FORMATTING RULES
+### KEY DRIVERS (KEEP SHORT)
+**IMPORTANT: Show a MAXIMUM OF 3 items in each section. Never list more than 3.**
 
-- Follow Markdown hierarchy EXACTLY.
-- One bullet per line. No merged lines.
-- Percent values MUST have 2 decimals (e.g., -3.45%).
-- No raw numbers. No tables.
-- No mention of pct_recent or pct_history.
-- Dimension names must be readable (no +, no ×).
-    Convert "Product Name + Sales Team" → "Product and Sales Team Interaction".
+#### Core Drivers
+List ONLY the top contributors (correct direction only), max 3.
+Format:
+- <Item> increased/decreased by ±X.XX%, with one short business interpretation.
+
+#### Supporting Drivers
+List up to 3 smaller contributors.
+Format:
+- <Item> changed by ±X.XX%.
+
+#### Interaction Effects 
+Show at most the top 3 interactions.
+Rewrite all combinations in natural language:
+- "<Product> and <Team/Region> increased/decreased by ±X.XX%, due to <simple reason>."
+
+Rules:
+- No symbols like × or +.
+- Keep only the most relevant interactions (max 3).
 
 ====================================================
-Here are the RCA tables (already pre-filtered by direction):
+### RULES
+- DO NOT include offsetting factors.
+- DO NOT include Business Implications of any kind.
+- DO NOT include Build / Simplify / Manage Change or similar sections.
+- No tables, no raw numeric dumps.
+- Percent values must always have 2 decimals.
+- Everything must remain concise, readable, and business-friendly.
+- Rewrite technical dimension names into simple business labels.
+- Output must follow ONLY the structure above.
+
+====================================================
+Here are the RCA tables:
 {rca_text}
 
-Now generate the final RCA explanation.
+Now produce the final short executive insight summary.
 """
+
+
+
 
     response = client.responses.create(
         model="gpt-5",
         input=[
-            {"role": "system", "content": planner_prompt},
+            {"role": "system", "content": prompt},
             {"role": "user", "content": user_question}
         ]
     )
